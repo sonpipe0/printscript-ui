@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # Set the working directory
 WORKDIR /app
@@ -11,7 +11,7 @@ RUN npm install
 RUN npm i -g serve
 
 # Label for metadata
-LABEL org.opencontainers.image.source="https://github.com/sonpipe0/printscript-ui"
+LABEL org.opencontainers.image.source=https://github.com/sonpipe0/printscript-ui
 
 # Use Docker secrets for environment variables (e.g., Auth0 credentials)
 RUN --mount=type=secret,id=auth0_domain,env=VITE_AUTH0_DOMAIN,required \
