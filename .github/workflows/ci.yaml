@@ -1,15 +1,31 @@
-name: Run UI Build
-
-on: [push]
+on:
+  push:
+    branches:
+      - master
+      - dev
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
         with:
-          node-version: '20.x'
-      - run: npm ci
-      - run: npm run build
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Build and push front-end image for master
+        uses: docker/build-push-action@v6
+        with:
+          context: ./
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/printscript-ui:latest
+          secrets: |
+            FRONTEND_ENV=${{ secrets.FRONTEND_ENV }}
+            API_URL=${{ secrets.API_URL }}
+            BACKEND_URL=localhost:5173/api/snippet
+
