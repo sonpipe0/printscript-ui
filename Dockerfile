@@ -8,7 +8,6 @@ COPY package.json .
 
 RUN npm install
 
-RUN npm i -g serve
 
 # Label for metadata
 LABEL org.opencontainers.image.source=https://github.com/sonpipe0/printscript-ui
@@ -17,8 +16,9 @@ LABEL org.opencontainers.image.source=https://github.com/sonpipe0/printscript-ui
 RUN --mount=type=secret,id=auth0_domain,env=VITE_AUTH0_DOMAIN,required \
     --mount=type=secret,id=auth0_client_id,env=VITE_AUTH0_CLIENT_ID,required \
     --mount=type=secret,id=backend_url,env=BACKEND_URL,required \
-    npm install && npm run build
+     npm run build
 
+RUN npm i -g serve
 # Expose the port on which the app will run
 EXPOSE 80
 
