@@ -1,4 +1,3 @@
-
 # syntax=docker/dockerfile:1
 FROM node:18-alpine AS builder
 
@@ -9,7 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # Label for metadata
-LABEL org.opencontainers.image.source="https://github.com/your-repo/frontend"
+LABEL org.opencontainers.image.source="https://github.com/sonpipe0/printscript-ui"
 
 # Use Docker secrets for environment variables (e.g., Auth0 credentials)
 RUN --mount=type=secret,id=auth0_domain,env=VITE_AUTH0_DOMAIN,required \
