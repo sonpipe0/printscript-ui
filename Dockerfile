@@ -4,8 +4,11 @@ FROM node:18-alpine AS builder
 # Set the working directory
 WORKDIR /app
 
-# Copy frontend source code
-COPY . /app
+COPY package.json .
+
+RUN npm install
+
+RUN npm i -g serve
 
 # Label for metadata
 LABEL org.opencontainers.image.source="https://github.com/sonpipe0/printscript-ui"
@@ -20,4 +23,4 @@ RUN --mount=type=secret,id=auth0_domain,env=VITE_AUTH0_DOMAIN,required \
 EXPOSE 80
 
 # Serve the built frontend
-ENTRYPOINT ["npm", "run", "serve"]
+ENTRYPOINT ["serve", "-s", "dist", "-l", "80"]
