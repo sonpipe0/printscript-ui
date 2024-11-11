@@ -6,26 +6,18 @@ import {FileType} from "../types/FileType.ts";
 import {Rule} from "../types/Rule.ts";
 import {useAuth0} from "@auth0/auth0-react";
 import {paginationParams} from './pagination.ts';
-import {useEffect, useState} from "react";
+import {FakeSnippetOperations} from "./mock/fakeSnippetOperations.ts";
 
 
 export const useSnippetsOperations = () => {
   const { getAccessTokenSilently } = useAuth0();
-  const [token, setToken] = useState<string | null>(null);
   const backendUrl = process.env.BACKEND_URL;
 
-  useEffect(() => {
-    getAccessTokenSilently()
-      .then(token => {
-        setToken(token);
-      })
-      .catch(error => {
-        console.error('Error getting access token', error);
-      });
-  }, []); // Empty dependency array ensures this runs only once
 
-  const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
-    if (!token) throw new Error('Token is not initialized');
+
+
+  const fetchWithAuth = async (url: string, options: RequestInit = {}, isString?: boolean) => {
+    const token = await getAccessTokenSilently();
     const response = await fetch(`${backendUrl}${url}`, {
       ...options,
       headers: {
@@ -37,7 +29,9 @@ export const useSnippetsOperations = () => {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    return response.json();
+    if (isString) {
+      return response.text();
+    } return response.json();
   };
 
   const createSnippet = async (newSnippet: CreateSnippet): Promise<Snippet> => {
@@ -47,50 +41,84 @@ export const useSnippetsOperations = () => {
       extension: newSnippet.extension,
       code: newSnippet.content
     }
-    return fetchWithAuth('/snippet/save', {
+    const snippet = await fetchWithAuth('/snippet/save', {
       method: 'POST',
       body: JSON.stringify(body)
     });
+    return getSnippet(snippet, getCompliance(snippet));
   };
 
   const updateSnippet = async ({ id, updateSnippet }: { id: string; updateSnippet: UpdateSnippet }): Promise<Snippet> => {
-    const body = { id, ...updateSnippet };
-    return fetchWithAuth('/snippet/update', {
-      method: 'PUT',
+    const snippet: Snippet = await getSnippetById(id);
+    const body = {
+      snippetId: id,
+      title: snippet.name,
+      language: snippet.language,
+      extension: snippet.extension,
+      code: updateSnippet.content
+    }
+    const response = await fetchWithAuth('/snippet/update', {
+      method: 'POST',
       body: JSON.stringify(body)
     });
+    return getSnippet(response, getCompliance(response));
   };
+
+  function getCompliance(snippet: {
+    author: string;
+    id: string;
+    title: string;
+    language: string;
+    extension: string;
+    code: string;
+    lintStatus: string
+  }) {
+    let compliance: ComplianceEnum = 'pending';
+    switch (snippet.lintStatus) {
+      case 'COMPLIANT':
+        compliance = 'compliant';
+        break;
+      case 'NON_COMPLIANT':
+        compliance = 'not-compliant';
+        break;
+      case 'UNKNOWN':
+        compliance = 'failed';
+        break;
+      case 'IN_PROGRESS':
+        compliance = 'pending';
+        break;
+      default:
+        return 'pending';
+    }
+    return compliance;
+  }
+
+  function getSnippet(snippet: {
+    author: string;
+    id: string;
+    title: string;
+    language: string;
+    extension: string;
+    code: string;
+    lintStatus: string
+  }, compliance: ComplianceEnum): Snippet {
+    return {
+      id: snippet.id,
+      name: snippet.title,
+      content: snippet.code,
+      language: snippet.language,
+      extension: snippet.extension,
+      compliance: compliance,
+      author: snippet.author
+    };
+  }
 
   const getSnippets = async (page: number = 0, pageSize: number = 10, snippetName?: string): Promise<PaginatedSnippets> => {
     const response = await fetchWithAuth(`/snippet/get/all?relation=ALL&${paginationParams(page, pageSize)}&prefix=${snippetName}`);
 
     const snippets: Snippet[] = response.map((snippet: { author: string; id: string; title: string; language: string; extension: string; code: string; lintStatus: string; }) => {
-      let compliance: ComplianceEnum = 'pending';
-      switch (snippet.lintStatus) {
-        case 'COMPLIANT':
-          compliance = 'compliant';
-          break;
-        case 'NON_COMPLIANT':
-          compliance = 'not-compliant';
-          break;
-        case 'UNKNOWN':
-          compliance = 'failed';
-          break;
-        case 'IN_PROGRESS':
-          compliance = 'pending';
-          break;
-        default:
-          compliance = 'pending';
-      }
-      return {
-        id: snippet.id,
-        name: snippet.title,
-        content: snippet.code,
-        language: snippet.language,
-        extension: snippet.extension,
-        compliance: compliance,
-        author: snippet.author
-      };
+      const compliance = getCompliance(snippet);
+      return getSnippet(snippet, compliance);
     });
 
     const paginatedSnippets: PaginatedSnippets = {
@@ -104,22 +132,33 @@ export const useSnippetsOperations = () => {
   };
 
   const getSnippetById = async (id: string): Promise<Snippet> => {
-    return fetchWithAuth(`/snippet/details?snippetId=${id}`);
-  };
+    const response = await fetchWithAuth(`/snippet/details?snippetId=${id}`);
+    return getSnippet(response, getCompliance(response));
+  }
 
   const getUserFriends = async (name: string = "", page: number = 0, pageSize: number = 10): Promise<PaginatedUsers> => {
     return fetchWithAuth(`/snippet/get/users?prefix=${name}&${paginationParams(page, pageSize)}`);
   };
 
-  const shareSnippet = async ({ snippetId, userId }: { snippetId: string; userId: string }): Promise<Snippet> => {
-    return fetchWithAuth('/snippet/share', {
+  const shareSnippet = async ({ snippetId, name }: { snippetId: string; name: string }): Promise<Snippet> => {
+    const response = await fetchWithAuth('/snippet/share', {
       method: 'POST',
-      body: JSON.stringify({ snippetId, userId })
+      body: JSON.stringify({ snippetId, username: name })
     });
+    return getSnippet(response, getCompliance(response));
   };
 
   const getTestCases = async (): Promise<TestCase[]> => {
-    return fetchWithAuth('/testCases');
+    const response = await fetchWithAuth('/test/get-all');
+    const testCases: TestCase[] = response.map((tc: { id: string; title: string; inputQueue: string[]; outputQueue: string[]; }) => {
+      return {
+        id: tc.id,
+        name: tc.title,
+        input: tc.inputQueue,
+        output: tc.outputQueue
+      };
+    });
+    return testCases;
   };
 
   const postTestCase = async (tc: Partial<TestCase>): Promise<TestCase> => {
@@ -142,33 +181,58 @@ export const useSnippetsOperations = () => {
     });
   };
 
+  const jsonToRules = (json: { [key: string]: string | number | boolean }): Rule[] => {
+    return Object.keys(json).map((key, index) => {
+      const value = json[key];
+      return {
+        id: index.toString(),
+        name: key,
+        isActive: typeof value === 'boolean' ? value : true,
+        value: typeof value !== 'boolean' ? value : null
+      };
+    });
+  };
+
+  const rulesToJson = (rules: Rule[]): { [key: string]: string | number | boolean } => {
+    const result =  rules.reduce((acc: { [key: string]: string | number | boolean }, rule) => {
+      console.log('rule:', rule);
+      if (rule.isActive && rule.value !== null && rule.value !== undefined) {
+        acc[rule.name] = rule.value;
+      } else if (rule.value === null || rule.value === undefined) {
+        acc[rule.name] = rule.isActive;
+      }
+      return acc;
+    }, {} as { [key: string]: string | number | boolean });
+    console.log('result:', result);
+    return result;
+  };
+
   const getFormatRules = async (): Promise<Rule[]> => {
-    return fetchWithAuth('/formatRules');
+    const response = await fetchWithAuth('/format');
+    return jsonToRules(response);
   };
 
   const modifyFormatRule = async (rule: Rule[]): Promise<Rule[]> => {
-    return fetchWithAuth('/formatRules', {
+    return fetchWithAuth('/format', {
       method: 'PUT',
-      body: JSON.stringify(rule)
+      body: JSON.stringify(rulesToJson(rule))
     });
   };
 
   const getLintingRules = async (): Promise<Rule[]> => {
-    return fetchWithAuth('/lintingRules');
+    const response = await fetchWithAuth('/lint');
+    return jsonToRules(response);
   };
 
   const modifyLintingRule = async (rule: Rule[]): Promise<Rule[]> => {
-    return fetchWithAuth('/lintingRules', {
+    return fetchWithAuth('/lint', {
       method: 'PUT',
-      body: JSON.stringify(rule)
+      body: JSON.stringify(rulesToJson(rule))
     });
   };
 
-  const formatSnippet = async (snippetContent: string): Promise<string> => {
-    return fetchWithAuth('/snippet/format', {
-      method: 'POST',
-      body: JSON.stringify({ snippetContent })
-    });
+  const formatSnippet = async (id: string): Promise<string> => {
+    return await fetchWithAuth('/snippet/get/formatted?snippetId=' + id, {}, true);
   };
 
   const deleteSnippet = async (id: string): Promise<string> => {
@@ -242,26 +306,20 @@ export const useUpdateSnippetById = ({ onSuccess }: { onSuccess: () => void }): 
     }
   });
 };
-
-export const useGetUserFriends = (name: string = "", page: number = 0, pageSize: number = 10) => {
-  const snippetOperations = useSnippetsOperations();
-  return useQuery<PaginatedUsers, Error>(['users', name, page, pageSize], () => snippetOperations.getUserFriends(name, page, pageSize));
-};
-
 export const useGetUsers = (name: string = "", page: number = 0, pageSize: number = 10) => {
   const snippetOperations = useSnippetsOperations();
   return useQuery<PaginatedUsers, Error>(['users', name, page, pageSize], () => snippetOperations.getUserFriends(name, page, pageSize));
 };
 export const useShareSnippet = () => {
   const snippetOperations = useSnippetsOperations();
-  return useMutation<Snippet, Error, { snippetId: string; userId: string }>(
-    ({ snippetId, userId }) => snippetOperations.shareSnippet({ snippetId, userId })
+  return useMutation<Snippet, Error, { snippetId: string; name: string }>(
+    ({ snippetId, name }) => snippetOperations.shareSnippet({ snippetId, name })
   );
 };
 
 export const useGetTestCases = () => {
   const snippetOperations = useSnippetsOperations();
-  return useQuery<TestCase[] | undefined, Error>(['testCases'], () => snippetOperations.getTestCases(), {});
+  return useQuery<TestCase[] | undefined, Error>(['testCases'], () => new FakeSnippetOperations().getTestCases(), {});
 };
 
 export const usePostTestCase = () => {
@@ -320,7 +378,7 @@ export const useModifyLintingRules = ({ onSuccess }: { onSuccess: () => void }) 
 export const useFormatSnippet = () => {
   const snippetOperations = useSnippetsOperations();
   return useMutation<string, Error, string>(
-    snippetContent => snippetOperations.formatSnippet(snippetContent)
+    id => snippetOperations.formatSnippet(id)
   );
 };
 

@@ -75,8 +75,8 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
   }, [formatSnippetData])
 
 
-  async function handleShareSnippet(userId: string) {
-    shareSnippet({snippetId: id, userId})
+  async function handleShareSnippet(name: string) {
+    shareSnippet({snippetId: id, name})
   }
 
   return (
@@ -109,7 +109,7 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
               {/*</Tooltip>*/}
               {/* TODO: we can implement a live mode*/}
               <Tooltip title={"Format"}>
-                <IconButton onClick={() => formatSnippet(code)} disabled={isFormatLoading}>
+                <IconButton onClick={() => formatSnippet(id)} disabled={isFormatLoading}>
                   <ReadMoreIcon />
                 </IconButton>
               </Tooltip>

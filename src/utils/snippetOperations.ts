@@ -16,7 +16,7 @@ export interface SnippetOperations {
 
   getUserFriends(name?: string,page?: number,pageSize?: number): Promise<PaginatedUsers>
 
-  shareSnippet(snippetId: string,userId: string): Promise<Snippet>
+  shareSnippet(snippetId: string,name: string): Promise<Snippet>
 
   getFormatRules(): Promise<Rule[]>
 
@@ -24,7 +24,7 @@ export interface SnippetOperations {
 
   getTestCases(): Promise<TestCase[]>
 
-  formatSnippet(snippet: string): Promise<string>
+  formatSnippet(id: string): Promise<string>
 
   postTestCase(testCase: Partial<TestCase>): Promise<TestCase>
 
