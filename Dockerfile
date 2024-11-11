@@ -4,9 +4,9 @@ FROM node:20-alpine AS builder
 # Set the working directory
 WORKDIR /app
 
-COPY package.json .
+COPY package*.json ./
 
-RUN npm ci
+RUN npm install
 
 # Label for metadata
 LABEL org.opencontainers.image.source=https://github.com/sonpipe0/printscript-ui
@@ -22,7 +22,13 @@ ENV VITE_AUTH0_CLIENT_ID=$VITE_AUTH0_CLIENT_ID
 ENV BACKEND_URL=$BACKEND_URL
 
 # Build the application
+COPY . .
 RUN npm run build
+
+# Stage 2: Serve the built files
+FROM --platform=linux/amd64 node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
 
 RUN npm i -g serve
 
