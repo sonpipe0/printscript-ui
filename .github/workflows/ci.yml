@@ -8,9 +8,10 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
-    services:
-      docker:
-        memory: 2147
+    definitions:
+      services:
+        docker:
+          memory: 2147
 
     steps:
       - name: Checkout code
@@ -30,6 +31,10 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/printscript-ui:latest
           build-args: |
-            VITE_AUTH0_DOMAIN=${{ secrets.VITE_AUTH0_DOMAIN }}
-            VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID }}
+            VITE_AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}
+            VITE_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}
             BACKEND_URL=localhost:5173/api/snippet
+        env:
+          DOCKER_BUILDKIT: 1
+        options: |
+          --memory=2g   # This sets the memory limit for the Docker build process
