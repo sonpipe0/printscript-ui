@@ -8,7 +8,6 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -20,17 +19,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ghcr.io/${{ github.repository_owner }}/printscript-ui:latest
-          build-args: |
-            VITE_AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}
-            VITE_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}
-            BACKEND_URL=localhost:5173/api/snippet
-        env:
-          DOCKER_BUILDKIT: 1
-        options: |
-          --memory=2g   # This sets the memory limit for the Docker build process
+      - name: Build and push Docker image with memory limit
+        run: |
+          docker build --memory=2g --build-arg VITE_AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }} \
+                       --build-arg VITE_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }} \
+                       --build-arg BACKEND_URL=localhost:5173/api/snippet \
+                       -t ghcr.io/${{ github.repository_owner }}/printscript-ui:latest .
+          docker push ghcr.io/${{ github.repository_owner }}/printscript-ui:latest
