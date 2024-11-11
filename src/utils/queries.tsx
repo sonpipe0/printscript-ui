@@ -318,7 +318,6 @@ export const useShareSnippet = () => {
 };
 
 export const useGetTestCases = () => {
-  const snippetOperations = useSnippetsOperations();
   return useQuery<TestCase[] | undefined, Error>(['testCases'], () => new FakeSnippetOperations().getTestCases(), {});
 };
 
