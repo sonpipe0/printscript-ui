@@ -6,7 +6,7 @@ WORKDIR /app
 
 COPY package.json .
 
-RUN npm install
+RUN npm ci
 
 # Label for metadata
 LABEL org.opencontainers.image.source=https://github.com/sonpipe0/printscript-ui
