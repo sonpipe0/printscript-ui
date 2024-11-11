@@ -14,6 +14,7 @@ createRoot(document.getElementById('root')!).render(
       authorizationParams={{
         redirect_uri: window.location.origin,
         audience: "https://snippet-searcher-api/",
+        scope: "read:snippets write:snippets"
       }}
     >
       <PaginationProvider>

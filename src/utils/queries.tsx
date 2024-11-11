@@ -1,122 +1,188 @@
-import { useMutation, UseMutationResult, useQuery } from 'react-query';
-import { CreateSnippet, PaginatedSnippets, Snippet, UpdateSnippet } from './snippet.ts';
-import { PaginatedUsers } from "./users.ts";
-import { TestCase } from "../types/TestCase.ts";
-import { FileType } from "../types/FileType.ts";
-import { Rule } from "../types/Rule.ts";
-import { useAuth0 } from "@auth0/auth0-react";
-import { useEffect, useState } from "react";
-import axios, { AxiosInstance } from "axios";
-import { paginationParams } from './pagination.ts';
+import {useMutation, UseMutationResult, useQuery} from 'react-query';
+import {ComplianceEnum, CreateSnippet, PaginatedSnippets, Snippet, UpdateSnippet} from './snippet.ts';
+import {PaginatedUsers} from "./users.ts";
+import {TestCase} from "../types/TestCase.ts";
+import {FileType} from "../types/FileType.ts";
+import {Rule} from "../types/Rule.ts";
+import {useAuth0} from "@auth0/auth0-react";
+import {paginationParams} from './pagination.ts';
+import {useEffect, useState} from "react";
+
 
 export const useSnippetsOperations = () => {
   const { getAccessTokenSilently } = useAuth0();
-  const [axiosInstance, setAxiosInstance] = useState<AxiosInstance>();
+  const [token, setToken] = useState<string | null>(null);
+  const backendUrl = process.env.BACKEND_URL;
 
   useEffect(() => {
     getAccessTokenSilently()
       .then(token => {
-        console.log(token);
-        const instance = axios.create({
-          baseURL: process.env.BACKEND_URL,
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        setAxiosInstance(instance);
+        setToken(token);
       })
       .catch(error => {
         console.error('Error getting access token', error);
       });
-  }, [getAccessTokenSilently]);
+  }, []); // Empty dependency array ensures this runs only once
+
+  const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+    if (!token) throw new Error('Token is not initialized');
+    const response = await fetch(`${backendUrl}${url}`, {
+      ...options,
+      headers: {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  };
 
   const createSnippet = async (newSnippet: CreateSnippet): Promise<Snippet> => {
-    const response = await axiosInstance?.post('/snippet/save', newSnippet);
-    return response?.data;
+    const body = {
+      title: newSnippet.name,
+      language: newSnippet.language,
+      extension: newSnippet.extension,
+      code: newSnippet.content
+    }
+    return fetchWithAuth('/snippet/save', {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
   };
 
   const updateSnippet = async ({ id, updateSnippet }: { id: string; updateSnippet: UpdateSnippet }): Promise<Snippet> => {
-    const body = {
-      id: id,
-      ...updateSnippet
-    };
-    const response = await axiosInstance?.put(`/snippet/update`, body);
-    return response?.data;
+    const body = { id, ...updateSnippet };
+    return fetchWithAuth('/snippet/update', {
+      method: 'PUT',
+      body: JSON.stringify(body)
+    });
   };
 
   const getSnippets = async (page: number = 0, pageSize: number = 10, snippetName?: string): Promise<PaginatedSnippets> => {
-    const response = await axiosInstance?.get(`snippet/get/all?relation=ALL&${paginationParams(page, pageSize)}&prefix=${snippetName}`);
-    return response?.data;
+    const response = await fetchWithAuth(`/snippet/get/all?relation=ALL&${paginationParams(page, pageSize)}&prefix=${snippetName}`);
+
+    const snippets: Snippet[] = response.map((snippet: { author: string; id: string; title: string; language: string; extension: string; code: string; lintStatus: string; }) => {
+      let compliance: ComplianceEnum = 'pending';
+      switch (snippet.lintStatus) {
+        case 'COMPLIANT':
+          compliance = 'compliant';
+          break;
+        case 'NON_COMPLIANT':
+          compliance = 'not-compliant';
+          break;
+        case 'UNKNOWN':
+          compliance = 'failed';
+          break;
+        case 'IN_PROGRESS':
+          compliance = 'pending';
+          break;
+        default:
+          compliance = 'pending';
+      }
+      return {
+        id: snippet.id,
+        name: snippet.title,
+        content: snippet.code,
+        language: snippet.language,
+        extension: snippet.extension,
+        compliance: compliance,
+        author: snippet.author
+      };
+    });
+
+    const paginatedSnippets: PaginatedSnippets = {
+      page: page,
+      page_size: pageSize,
+      count: snippets.length,
+      snippets: snippets
+    };
+    console.log('paginatedSnippets:', paginatedSnippets);
+    return paginatedSnippets;
   };
 
   const getSnippetById = async (id: string): Promise<Snippet> => {
-    const response = await axiosInstance?.get(`/snippet/details?snippetId=${id}`);
-    return response?.data;
+    return fetchWithAuth(`/snippet/details?snippetId=${id}`);
   };
 
   const getUserFriends = async (name: string = "", page: number = 0, pageSize: number = 10): Promise<PaginatedUsers> => {
-    const response = await axiosInstance?.get(`/snippet/get/users?prefix=${name}&page=${page}&pageSize=${pageSize}`);
-    return response?.data;
+    return fetchWithAuth(`/snippet/get/users?prefix=${name}&${paginationParams(page, pageSize)}`);
   };
 
   const shareSnippet = async ({ snippetId, userId }: { snippetId: string; userId: string }): Promise<Snippet> => {
-    const response = await axiosInstance?.post(`/snippet/share`, { snippetId, userId });
-    return response?.data;
+    return fetchWithAuth('/snippet/share', {
+      method: 'POST',
+      body: JSON.stringify({ snippetId, userId })
+    });
   };
 
   const getTestCases = async (): Promise<TestCase[]> => {
-    const response = await axiosInstance?.get(`/testCases`);
-    return response?.data;
+    return fetchWithAuth('/testCases');
   };
 
   const postTestCase = async (tc: Partial<TestCase>): Promise<TestCase> => {
-    const response = await axiosInstance?.post(`/testCases`, tc);
-    return response?.data;
+    return fetchWithAuth('/testCases', {
+      method: 'POST',
+      body: JSON.stringify(tc)
+    });
   };
 
   const removeTestCase = async (id: string): Promise<string> => {
-    const response = await axiosInstance?.delete(`/testCases/${id}`);
-    return response?.data;
+    return fetchWithAuth(`/testCases/${id}`, {
+      method: 'DELETE'
+    });
   };
 
   const testSnippet = async (tc: Partial<TestCase>): Promise<TestCaseResult> => {
-    const response = await axiosInstance?.post(`/snippet/test`, tc);
-    return response?.data;
+    return fetchWithAuth('/snippet/test', {
+      method: 'POST',
+      body: JSON.stringify(tc)
+    });
   };
 
   const getFormatRules = async (): Promise<Rule[]> => {
-    const response = await axiosInstance?.get(`/formatRules`);
-    return response?.data;
+    return fetchWithAuth('/formatRules');
   };
 
   const modifyFormatRule = async (rule: Rule[]): Promise<Rule[]> => {
-    const response = await axiosInstance?.put(`/formatRules`, rule);
-    return response?.data;
+    return fetchWithAuth('/formatRules', {
+      method: 'PUT',
+      body: JSON.stringify(rule)
+    });
   };
 
   const getLintingRules = async (): Promise<Rule[]> => {
-    const response = await axiosInstance?.get(`/lintingRules`);
-    return response?.data;
+    return fetchWithAuth('/lintingRules');
   };
 
   const modifyLintingRule = async (rule: Rule[]): Promise<Rule[]> => {
-    const response = await axiosInstance?.put(`/lintingRules`, rule);
-    return response?.data;
+    return fetchWithAuth('/lintingRules', {
+      method: 'PUT',
+      body: JSON.stringify(rule)
+    });
   };
 
   const formatSnippet = async (snippetContent: string): Promise<string> => {
-    const response = await axiosInstance?.post(`/snippet/format`, { snippetContent });
-    return response?.data;
+    return fetchWithAuth('/snippet/format', {
+      method: 'POST',
+      body: JSON.stringify({ snippetContent })
+    });
   };
 
   const deleteSnippet = async (id: string): Promise<string> => {
-    const response = await axiosInstance?.delete(`/snippet/${id}`);
-    return response?.data;
+    return fetchWithAuth(`/snippet/${id}`, {
+      method: 'DELETE'
+    });
   };
 
   const getFileTypes = async (): Promise<FileType[]> => {
-    const response = await axiosInstance?.get(`/fileTypes`);
-    return response?.data;
+    return [{ extension: 'js', language: 'javascript' }, { extension: 'ts', language: 'typescript' },
+      { extension: 'py', language: 'python' }, { extension: 'java', language: 'java' }, {
+        extension: 'c',
+        language: 'c'
+      }, { extension: 'psc', language: 'printscript' }];
   };
 
   return {
