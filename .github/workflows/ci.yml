@@ -8,10 +8,6 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
-    definitions:
-      services:
-        docker:
-          memory: 2147
 
     steps:
       - name: Checkout code
