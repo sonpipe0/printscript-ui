@@ -8,17 +8,24 @@ COPY package.json .
 
 RUN npm install
 
-
 # Label for metadata
 LABEL org.opencontainers.image.source=https://github.com/sonpipe0/printscript-ui
 
-# Use Docker secrets for environment variables (e.g., Auth0 credentials)
-RUN --mount=type=secret,id=auth0_domain,env=VITE_AUTH0_DOMAIN,required \
-    --mount=type=secret,id=auth0_client_id,env=VITE_AUTH0_CLIENT_ID,required \
-    --mount=type=secret,id=backend_url,env=BACKEND_URL,required \
-     npm run build
+# Define build arguments
+ARG VITE_AUTH0_DOMAIN
+ARG VITE_AUTH0_CLIENT_ID
+ARG BACKEND_URL
+
+# Set environment variables from build arguments
+ENV VITE_AUTH0_DOMAIN=$VITE_AUTH0_DOMAIN
+ENV VITE_AUTH0_CLIENT_ID=$VITE_AUTH0_CLIENT_ID
+ENV BACKEND_URL=$BACKEND_URL
+
+# Build the application
+RUN npm run build
 
 RUN npm i -g serve
+
 # Expose the port on which the app will run
 EXPOSE 80
 
