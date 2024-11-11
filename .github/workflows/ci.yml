@@ -29,4 +29,4 @@ jobs:
           build-args: |
             VITE_AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}
             VITE_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}
-            BACKEND_URL=localhost:5173/api/snippet
+            BACKEND_URL=http://localhost:5173/api/snippet
