@@ -8,6 +8,10 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
+    services:
+      docker:
+        memory: 2147
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
