@@ -1,12 +1,11 @@
-import {useMutation, UseMutationResult, useQuery} from 'react-query';
-import {ComplianceEnum, CreateSnippet, PaginatedSnippets, Snippet, UpdateSnippet} from './snippet.ts';
-import {PaginatedUsers} from "./users.ts";
-import {TestCase} from "../types/TestCase.ts";
-import {FileType} from "../types/FileType.ts";
-import {Rule} from "../types/Rule.ts";
-import {useAuth0} from "@auth0/auth0-react";
-import {paginationParams} from './pagination.ts';
-import {FakeSnippetOperations} from "./mock/fakeSnippetOperations.ts";
+import { useMutation, UseMutationResult, useQuery } from 'react-query';
+import { ComplianceEnum, CreateSnippet, PaginatedSnippets, Snippet, UpdateSnippet } from './snippet.ts';
+import { PaginatedUsers } from "./users.ts";
+import { TestCase } from "../types/TestCase.ts";
+import { FileType } from "../types/FileType.ts";
+import { Rule } from "../types/Rule.ts";
+import { useAuth0 } from "@auth0/auth0-react";
+import { paginationParams } from './pagination.ts';
 
 
 export const useSnippetsOperations = () => {
@@ -148,37 +147,66 @@ export const useSnippetsOperations = () => {
     return getSnippet(response, getCompliance(response));
   };
 
-  const getTestCases = async (): Promise<TestCase[]> => {
-    const response = await fetchWithAuth('/test/get-all');
+  const getTestCases = async (id: string): Promise<TestCase[]> => {
+    const response = await fetchWithAuth('/test/get-all?snippetId=' + id);
     const testCases: TestCase[] = response.map((tc: { id: string; title: string; inputQueue: string[]; outputQueue: string[]; }) => {
       return {
         id: tc.id,
         name: tc.title,
-        input: tc.inputQueue,
-        output: tc.outputQueue
+        input: tc.inputQueue.length === 0 ? null : tc.inputQueue,
+        output: tc.outputQueue.length === 0 ? null : tc.outputQueue
       };
     });
     return testCases;
   };
 
   const postTestCase = async (tc: Partial<TestCase>): Promise<TestCase> => {
-    return fetchWithAuth('/testCases', {
+    console.log('tc:', tc);
+    const body = {
+      id: tc.id,
+      title: tc.name,
+      inputQueue: tc.input,
+      outputQueue: tc.output
+    };
+
+    return fetchWithAuth('/test/create', {
       method: 'POST',
-      body: JSON.stringify(tc)
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
     });
   };
 
   const removeTestCase = async (id: string): Promise<string> => {
-    return fetchWithAuth(`/testCases/${id}`, {
+    return fetchWithAuth(`/test/delete?testId=${id}`, {
       method: 'DELETE'
     });
   };
 
   const testSnippet = async (tc: Partial<TestCase>): Promise<TestCaseResult> => {
-    return fetchWithAuth('/snippet/test', {
-      method: 'POST',
-      body: JSON.stringify(tc)
-    });
+    const body = {
+      id: tc.id,
+      title: tc.name,
+      inputQueue: tc.input,
+      outputQueue: tc.output
+    };
+
+    try {
+      await fetchWithAuth('/test/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      }, true);
+
+      return "success";
+
+    } catch (error) {
+      console.error('Error testing snippet:', error);
+      return "fail";
+    }
   };
 
   const jsonToRules = (json: { [key: string]: string | number | boolean }): Rule[] => {
@@ -194,7 +222,7 @@ export const useSnippetsOperations = () => {
   };
 
   const rulesToJson = (rules: Rule[]): { [key: string]: string | number | boolean } => {
-    const result =  rules.reduce((acc: { [key: string]: string | number | boolean }, rule) => {
+    const result = rules.reduce((acc: { [key: string]: string | number | boolean }, rule) => {
       console.log('rule:', rule);
       if (rule.isActive && rule.value !== null && rule.value !== undefined) {
         acc[rule.name] = rule.value;
@@ -243,10 +271,10 @@ export const useSnippetsOperations = () => {
 
   const getFileTypes = async (): Promise<FileType[]> => {
     return [{ extension: 'js', language: 'javascript' }, { extension: 'ts', language: 'typescript' },
-      { extension: 'py', language: 'python' }, { extension: 'java', language: 'java' }, {
-        extension: 'c',
-        language: 'c'
-      }, { extension: 'psc', language: 'printscript' }];
+    { extension: 'py', language: 'python' }, { extension: 'java', language: 'java' }, {
+      extension: 'c',
+      language: 'c'
+    }, { extension: 'psc', language: 'printscript' }];
   };
 
   return {
@@ -317,8 +345,9 @@ export const useShareSnippet = () => {
   );
 };
 
-export const useGetTestCases = () => {
-  return useQuery<TestCase[] | undefined, Error>(['testCases'], () => new FakeSnippetOperations().getTestCases(), {});
+export const useGetTestCases = (id: string) => {
+  const snippetOperations = useSnippetsOperations();
+  return useQuery(['testCases', id], () => snippetOperations.getTestCases(id));
 };
 
 export const usePostTestCase = () => {
