@@ -20,13 +20,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image to dev
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/printscript-ui:latest
+          tags: ghcr.io/${{ github.repository_owner }}/printscript-ui:latest-dev
           build-args: |
             VITE_AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}
             VITE_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}
             BACKEND_URL=${{ secrets.BACKEND_URL }}
+
+      - name: Build and push Docker image to prod
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/printscript-ui:latest-prod
+          build-args: |
+            VITE_AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}
+            VITE_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}
+            BACKEND_URL=${{ secrets.BACKEND_URL_PROD }}
