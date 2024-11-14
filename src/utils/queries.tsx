@@ -17,6 +17,7 @@ export const useSnippetsOperations = () => {
 
   const fetchWithAuth = async (url: string, options: RequestInit = {}, isString?: boolean) => {
     const token = await getAccessTokenSilently();
+    localStorage.setItem('authAccessToken', token);
     const response = await fetch(`${backendUrl}${url}`, {
       ...options,
       headers: {

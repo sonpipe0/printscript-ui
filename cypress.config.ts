@@ -12,4 +12,11 @@ export default defineConfig({
     experimentalStudio: true,
     baseUrl: FRONTEND_URL,
   },
+  env: {
+    AUTH0_USERNAME: process.env.AUTH0_USERNAME,
+    AUTH0_PASSWORD: process.env.AUTH0_PASSWORD,
+    AUTH0_USERNAME2: process.env.AUTH0_USERNAME2,
+    AUTH0_PASSWORD2: process.env.AUTH0_PASSWORD2,
+  }
 });
+
