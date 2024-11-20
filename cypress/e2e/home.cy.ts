@@ -14,7 +14,7 @@ describe('Home', () => {
     process.env.BACKEND_URL = Cypress.env("BACKEND_URL");
   })
   it('Renders home', () => {
-    cy.visit('http://localhost:5173')
+    cy.visit('https://snippet-searcher.brazilsouth.cloudapp.azure.com/')
     /* ==== Generated with Cypress Studio ==== */
     cy.get('.MuiTypography-h6').should('have.text', 'Printscript');
     cy.get('.MuiBox-root > .MuiInputBase-root > .MuiInputBase-input').should('be.visible');
@@ -25,7 +25,7 @@ describe('Home', () => {
 
   // You need to have at least 1 snippet in your DB for this test to pass
   it('Renders the first snippets', () => {
-    cy.visit('http://localhost:5173')
+    cy.visit('https://snippet-searcher.brazilsouth.cloudapp.azure.com/')
     const first10Snippets = cy.get('[data-testid="snippet-row"]')
 
     first10Snippets.should('have.length.greaterThan', 0)
@@ -34,7 +34,7 @@ describe('Home', () => {
   })
 
   it('Can creat snippet find snippets by name', () => {
-    cy.visit('http://localhost:5173');
+    cy.visit('https://snippet-searcher.brazilsouth.cloudapp.azure.com/');
     const snippetData: CreateSnippet = {
       name: "Test name",
       content: "println(1);",
@@ -49,7 +49,7 @@ describe('Home', () => {
       code: snippetData.content
     }
 
-    cy.intercept('GET',`http://localhost:8080/snippet/get/all?relation=ALL&${paginationParams(0, 10)}&prefix=`,
+    cy.intercept('GET',`https://snippet-searcher.brazilsouth.cloudapp.azure.com/api/snippet/snippet/get/all?relation=ALL&${paginationParams(0, 10)}&prefix=`,
       (req) => {
         req.reply((res) => {
           expect(res.statusCode).to.eq(200);

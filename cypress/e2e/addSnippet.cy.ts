@@ -9,9 +9,9 @@ describe('Add snippet tests', () => {
   });
 
   it('Can add snippets manually', () => {
-    cy.visit("http://localhost:5173");
+    cy.visit("https://snippet-searcher.brazilsouth.cloudapp.azure.com/");
     cy.wait(5000);
-    cy.intercept('POST', "http://localhost:8080/snippet/save", (req) => {
+    cy.intercept('POST', "https://snippet-searcher.brazilsouth.cloudapp.azure.com/api/snippet/snippet/save", (req) => {
       req.reply((res) => {
         expect(res.body).to.include.keys ("id", "title", "code", "language", "extension", "lintStatus");
         expect(res.statusCode).to.eq(200);
@@ -34,7 +34,7 @@ describe('Add snippet tests', () => {
   it('Can add snippets via file', () => {
     cy.visit("/");
     cy.wait(5000);
-    cy.intercept('POST', "http://localhost:8080/snippet/save", (req) => {
+    cy.intercept('POST', "https://snippet-searcher.brazilsouth.cloudapp.azure.com/api/snippet/snippet/save", (req) => {
       req.reply((res) => {
         expect(res.body).to.include.keys ("id", "title", "code", "language", "extension", "lintStatus");
         expect(res.statusCode).to.eq(200);

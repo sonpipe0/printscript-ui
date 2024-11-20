@@ -25,14 +25,14 @@ describe('Add snippet tests', () => {
     )
     cy.visit("http://localhost:5173")
 
-    cy.intercept('GET', new RegExp(`http://localhost:8080/snippet/details/\\?snippetId=.*`), (req) => {
+    cy.intercept('GET', new RegExp(`https://snippet-searcher.brazilsouth.cloudapp.azure.com/api/snippet/snippet/details/\\?snippetId=.*`), (req) => {
       req.reply((res) => {
         snippet.id = res.body.id; // Capture the generated UUID from the response
       });
     }).as("getSnippetById")
     cy.intercept('GET', `/snippet/get/all?relation=ALL&${paginationParams(0, 10)}&prefix=`).as("getSnippets")
 
-    cy.visit("http://localhost:5173")
+    cy.visit("https://snippet-searcher.brazilsouth.cloudapp.azure.com/")
 
     cy.wait("@getSnippets")
     cy.get('.MuiTableBody-root > :nth-child(1) > :nth-child(1)').click();
