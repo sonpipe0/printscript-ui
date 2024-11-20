@@ -265,7 +265,7 @@ export const useSnippetsOperations = () => {
   };
 
   const deleteSnippet = async (id: string): Promise<string> => {
-    const response =  await fetchWithAuth(`/snippet?snippetId=${id}`, {
+    const response =  await fetchWithAuth(`/snippet/delete?snippetId=${id}`, {
       method: 'DELETE'
     });
 
