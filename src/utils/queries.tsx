@@ -137,7 +137,7 @@ export const useSnippetsOperations = () => {
   }
 
   const getUserFriends = async (name: string = "", page: number = 0, pageSize: number = 10): Promise<PaginatedUsers> => {
-    return fetchWithAuth(`/snippet/get/users?prefix=${name}&${paginationParams(page, pageSize)}`);
+    return await fetchWithAuth(`/snippet/get/users?prefix=${name}&${paginationParams(page, pageSize)}`);
   };
 
   const shareSnippet = async ({ snippetId, name }: { snippetId: string; name: string }): Promise<Snippet> => {
@@ -170,7 +170,7 @@ export const useSnippetsOperations = () => {
       outputQueue: tc.output
     };
 
-    return fetchWithAuth('/test/create', {
+    return await fetchWithAuth('/test/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -180,7 +180,7 @@ export const useSnippetsOperations = () => {
   };
 
   const removeTestCase = async (id: string): Promise<string> => {
-    return fetchWithAuth(`/test/delete?testId=${id}`, {
+    return await fetchWithAuth(`/test/delete?testId=${id}`, {
       method: 'DELETE'
     });
   };
@@ -242,7 +242,7 @@ export const useSnippetsOperations = () => {
   };
 
   const modifyFormatRule = async (rule: Rule[]): Promise<Rule[]> => {
-    return fetchWithAuth('/format', {
+    return await fetchWithAuth('/format', {
       method: 'PUT',
       body: JSON.stringify(rulesToJson(rule))
     });
@@ -254,7 +254,7 @@ export const useSnippetsOperations = () => {
   };
 
   const modifyLintingRule = async (rule: Rule[]): Promise<Rule[]> => {
-    return fetchWithAuth('/lint', {
+    return await fetchWithAuth('/lint', {
       method: 'PUT',
       body: JSON.stringify(rulesToJson(rule))
     });
@@ -265,9 +265,14 @@ export const useSnippetsOperations = () => {
   };
 
   const deleteSnippet = async (id: string): Promise<string> => {
-    return fetchWithAuth(`/snippet/${id}`, {
+    const response =  await fetchWithAuth(`/snippet?snippetId=${id}`, {
       method: 'DELETE'
     });
+
+    if (response.status === 200) {
+      return 'Snippet deleted successfully';
+    }
+    throw new Error('Error deleting snippet');
   };
 
   const getFileTypes = async (): Promise<FileType[]> => {
