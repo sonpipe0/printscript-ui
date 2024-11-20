@@ -61,7 +61,7 @@ describe('Home', () => {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('authAccessToken')}`
       },
-      url: 'http://localhost:8080/snippet/save',
+      url: 'https://snippet-searcher.brazilsouth.cloudapp.azure.com/api/snippet/snippet/save',
       body: reqBody,
       failOnStatusCode: false
     }).then((response) => {

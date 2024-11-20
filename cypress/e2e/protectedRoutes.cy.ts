@@ -2,7 +2,7 @@
 describe('Protected routes test', () => {
   it('should redirect to login when accessing a protected route unauthenticated', () => {
     // Visit the protected route
-    cy.visit('http://localhost:5173/rules');
+    cy.visit('https://snippet-searcher.brazilsouth.cloudapp.azure.com/rules');
     cy.origin(Cypress.env('VITE_AUTH0_DOMAIN'), () => {
       cy.url().should('include', '/login');
     });
@@ -10,7 +10,7 @@ describe('Protected routes test', () => {
 
   it('should display login content', () => {
     // Visit the login page
-    cy.visit("http://localhost:5173");
+    cy.visit("https://snippet-searcher.brazilsouth.cloudapp.azure.com/");
     cy.wait(2000)
 
     cy.origin(Cypress.env('VITE_AUTH0_DOMAIN'), () => {
@@ -25,7 +25,7 @@ describe('Protected routes test', () => {
       Cypress.env("AUTH0_PASSWORD")
     )
 
-    cy.visit("http://localhost:5173");
+    cy.visit("https://snippet-searcher.brazilsouth.cloudapp.azure.com/");
 
     cy.wait(1000)
 

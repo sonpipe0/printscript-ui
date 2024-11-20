@@ -1,5 +1,4 @@
 import {AUTH0_PASSWORD, AUTH0_USERNAME, BACKEND_URL} from "../../src/utils/constants";
-import {FakeSnippetStore} from "../../src/utils/mock/fakeSnippetStore";
 import {paginationParams} from "../../src/utils/pagination";
 
 describe('Add snippet tests', () => {
@@ -23,24 +22,24 @@ describe('Add snippet tests', () => {
       Cypress.env("AUTH0_USERNAME"),
       Cypress.env("AUTH0_PASSWORD")
     )
-    cy.visit("http://localhost:5173")
 
     cy.intercept('GET', new RegExp(`https://snippet-searcher.brazilsouth.cloudapp.azure.com/api/snippet/snippet/details/\\?snippetId=.*`), (req) => {
       req.reply((res) => {
         snippet.id = res.body.id; // Capture the generated UUID from the response
       });
     }).as("getSnippetById")
-    cy.intercept('GET', `/snippet/get/all?relation=ALL&${paginationParams(0, 10)}&prefix=`).as("getSnippets")
 
     cy.visit("https://snippet-searcher.brazilsouth.cloudapp.azure.com/")
 
+    cy.intercept('GET', `/api/snippet/snippet/get/all?relation=ALL&${paginationParams(0, 10)}&prefix=`).as("getSnippets")
     cy.wait("@getSnippets")
+
     cy.get('.MuiTableBody-root > :nth-child(1) > :nth-child(1)').click();
   })
 
   it('Can share a snippet ', () => {
     cy.get('[aria-label="Share"]').click();
-    cy.get('#\\:rj\\:').click();
+    cy.get('#\\:r9\\:').click();
     cy.contains('pedro').click();
     cy.get('.css-1yuhvjn > .MuiBox-root > .MuiButton-contained').click();
     cy.wait(2000)
