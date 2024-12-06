@@ -13,12 +13,6 @@ describe('Add snippet tests', () => {
   }
   beforeEach(() => {
     cy.loginToAuth0(
-      Cypress.env("AUTH0_USERNAME2"),
-      Cypress.env("AUTH0_PASSWORD2")
-    )
-    //clear cookies
-    cy.clearCookies()
-    cy.loginToAuth0(
       Cypress.env("AUTH0_USERNAME"),
       Cypress.env("AUTH0_PASSWORD")
     )
@@ -40,7 +34,7 @@ describe('Add snippet tests', () => {
   it('Can share a snippet ', () => {
     cy.get('[aria-label="Share"]').click();
     cy.get('#\\:r9\\:').click();
-    cy.contains('pedro').click();
+    cy.contains('sonpipe').click();
     cy.get('.css-1yuhvjn > .MuiBox-root > .MuiButton-contained').click();
     cy.wait(2000)
   })
