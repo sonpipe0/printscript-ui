@@ -5,7 +5,7 @@ import { TestCase } from "../types/TestCase.ts";
 import { FileType } from "../types/FileType.ts";
 import { Rule } from "../types/Rule.ts";
 import { useAuth0 } from "@auth0/auth0-react";
-import { paginationParams } from './pagination.ts';
+import {Pagination, paginationParams} from './pagination.ts';
 
 
 export const useSnippetsOperations = () => {
@@ -116,16 +116,19 @@ export const useSnippetsOperations = () => {
   const getSnippets = async (page: number = 0, pageSize: number = 10, snippetName?: string): Promise<PaginatedSnippets> => {
     const response = await fetchWithAuth(`/snippet/get/all?relation=ALL&${paginationParams(page, pageSize)}&prefix=${snippetName}`);
 
-    const snippets: Snippet[] = response.map((snippet: { author: string; id: string; title: string; language: string; extension: string; code: string; lintStatus: string; }) => {
-      const compliance = getCompliance(snippet);
-      return getSnippet(snippet, compliance);
-    });
+    const snippets: Pagination & { snippetCodeDetails: Snippet[] } = {
+      ...response,
+      snippetCodeDetails: response.snippetCodeDetails.map((snippet: { author: string; id: string; title: string; language: string; extension: string; code: string; lintStatus: string; }) => {
+        const compliance = getCompliance(snippet);
+        return getSnippet(snippet, compliance);
+      })
+    };
 
     const paginatedSnippets: PaginatedSnippets = {
       page: page,
       page_size: pageSize,
-      count: snippets.length,
-      snippets: snippets
+      count: snippets.count,
+      snippets: snippets.snippetCodeDetails
     };
     console.log('paginatedSnippets:', paginatedSnippets);
     return paginatedSnippets;
